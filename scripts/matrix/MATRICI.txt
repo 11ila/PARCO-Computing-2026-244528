@@ -1,0 +1,10 @@
+nome matrice 	 |	file .mtx	|	num_row	   |   num_col	|    nnz	|	sparsity	|	density	| 	Symmetrical	|    Diagonal        
+																	
+bcsstk17 	 |	10K.mtx		|      	10974      |   10974    |    428650     |       0.65%		| 	0.35%	|	YES		|	YES	
+chipcool1 	 |	20K.mtx		|      	20082      |   20082    |    281150     |       0.93%		| 	0.07%	|	YES		|	YES
+TSOPF_FS_b162_c4 |	40K.mtx		|      	40798      |   40798    |   2398220     |       0.86%		| 	0.14%	|	NO	  	|	NO	
+ncvxbqp1 	 |	50K.mtx		|      	50000      |   50000    |    349968     |       0.986%		| 	0.014%	|	YES		|	NO
+mk12_b4		 |	62K.mtx		|      	62370      |   62370    |    311850     |       0.992%		| 	0.008%	|	NO		|	NO
+s3dkt3m2  	 |	90K.mtx		|      	90449      |   90449    |   3686223     |       0.955%		| 	0.045%	|	YES		|	YES
+af_shell8  	 |	500K.mtx	|      504855      |  504855    |  17579155     |       0.993%		| 	0.007%	|	YES		|	YES
+

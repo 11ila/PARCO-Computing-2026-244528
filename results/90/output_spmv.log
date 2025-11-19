@@ -1,0 +1,189 @@
+============================================
+BENCHMARK SpMV OpenMP
+============================================
+Nodo:      hpc-c04-node05.unitn.it
+Directory: /home/ilaria.basanisi/parallel/FINAL
+Matrice:   90K.mtx
+Data:      Sun Nov 16 17:20:31 CET 2025
+Output:    results_20251116_172031
+Runs:      50 per configurazione
+============================================
+
+>>> FASE 1: COMPILATION
+--------------------------------------------
+Compilation completed
+Debug version compiled
+
+>>> FASE 2: BENCHMARK PERFORMANCE
+--------------------------------------------
+============================================
+BENCHMARK SpMV OpenMP
+============================================
+Matrix:        90K.mtx
+Runs/config:   50
+Threads:       1 2 4 8 16 32
+Timestamp:     20251116_172031
+============================================
+
+
+========================================
+>>> TESTING WITH 1 THREAD(S)
+========================================
+
+[OK] Test completato per 1 thread(s)
+
+========================================
+>>> TESTING WITH 2 THREAD(S)
+========================================
+
+[OK] Test completato per 2 thread(s)
+
+========================================
+>>> TESTING WITH 4 THREAD(S)
+========================================
+
+[OK] Test completato per 4 thread(s)
+
+========================================
+>>> TESTING WITH 8 THREAD(S)
+========================================
+
+[OK] Test completato per 8 thread(s)
+
+========================================
+>>> TESTING WITH 16 THREAD(S)
+========================================
+
+[OK] Test completato per 16 thread(s)
+
+========================================
+>>> TESTING WITH 32 THREAD(S)
+========================================
+
+[OK] Test completato per 32 thread(s)
+
+============================================
+>>> RIEPILOGO GLOBALE
+============================================
+
+THREADS    | BEST CONFIG          | TIME (ms)    | SPEEDUP   
+----------------------------------------------------------------
+1          | S-1000               | 1.700        | 2.1659x   
+2          | G-100                | 1.012        | 3.0732x   
+4          | S-1000               | 0.523        | 7.1673x   
+8          | G--                  | 0.355        | 9.8586x   
+16         | D-1000               | 0.302        | 13.4657x  
+32         | S-100                | 0.208        | 18.7044x  
+================================================================
+
+[OK] Benchmark completato con successo!
+
+>>> FASE 3: ANALISI E GENERAZIONE GRAFICI
+--------------------------------------------
+Generazione grafici da: benchmark_detail_20251116_172031.csv
+[WARNING] Errore nella generazione dei grafici
+python3: can't open file '/home/ilaria.basanisi/parallel/FINAL/results_20251116_172031/../analyze_detail.py': [Errno 2] No such file or directory
+
+>>> FASE 4: MEMORY PROFILING WITH VALGRIND
+--------------------------------------------
+
+=== VALGRIND: 1 threads ===
+  - Memcheck (memory leak)...
+    OK: results_20251116_172031/valgrind/memcheck_1t.log
+  - Cachegrind (cache analysis)...
+    OK: results_20251116_172031/valgrind/cachegrind_1t.out
+    OK: results_20251116_172031/valgrind/cachegrind_1t.txt
+
+=== VALGRIND: 4 threads ===
+  - Memcheck (memory leak)...
+    OK: results_20251116_172031/valgrind/memcheck_4t.log
+  - Cachegrind (cache analysis)...
+    OK: results_20251116_172031/valgrind/cachegrind_4t.out
+    OK: results_20251116_172031/valgrind/cachegrind_4t.txt
+
+=== VALGRIND: 16 threads ===
+  - Memcheck (memory leak)...
+    OK: results_20251116_172031/valgrind/memcheck_16t.log
+  - Cachegrind (cache analysis)...
+    OK: results_20251116_172031/valgrind/cachegrind_16t.out
+    OK: results_20251116_172031/valgrind/cachegrind_16t.txt
+
+=== VALGRIND: 32 threads ===
+  - Memcheck (memory leak)...
+    OK: results_20251116_172031/valgrind/memcheck_32t.log
+  - Cachegrind (cache analysis)...
+    OK: results_20251116_172031/valgrind/cachegrind_32t.out
+    OK: results_20251116_172031/valgrind/cachegrind_32t.txt
+
+Valgrind complete: results_20251116_172031/valgrind/
+
+>>> FINAL RECAP
+============================================
+============================================
+INDICE FILE GENERATI
+============================================
+Data: Sun Nov 16 17:28:35 CET 2025
+Matrice: 90K.mtx
+Runs per configurazione: 50
+Threads testati: 1 2 4 8 16 32
+
+FILE PRINCIPALI:
+--------------------------------------------
+  - benchmark_output.txt           : Output completo benchmark
+  - benchmark_detail_20251116_172031.csv : Tutte le run (3601 righe)
+  - benchmark_log_20251116_172031.txt    : Log dettagliato esecuzione
+
+GRAFICI GENERATI:
+--------------------------------------------
+  - performance_overview.png       : Performance vs threads
+  - heatmap_chunk_size.png         : Heatmap speedup
+  - efficiency.png                 : Efficienza parallela
+  - 90percent.png                  : 90° percentile tempi
+
+ANALISI:
+--------------------------------------------
+  - analysis_output.txt            : Log analisi Python
+  - valgrind/                      : Directory profiling memoria
+
+TUTTI I FILE:
+--------------------------------------------
+-rw-r--r-- 1 ilaria.basanisi ADA-9393  146 Nov 16 17:20 analysis_output.txt
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 127K Nov 16 17:20 benchmark_detail_20251116_172031.csv
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 9.2K Nov 16 17:20 benchmark_log_20251116_172031.txt
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 1.9K Nov 16 17:20 benchmark_output.txt
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 1017 Nov 16 17:28 INDEX.txt
+
+VALGRIND FILES:
+--------------------------------------------
+-rw------- 1 ilaria.basanisi ADA-9393 152K Nov 16 17:26 cachegrind_16t.out
+-rw-r--r-- 1 ilaria.basanisi ADA-9393  22K Nov 16 17:26 cachegrind_16t.txt
+-rw------- 1 ilaria.basanisi ADA-9393 147K Nov 16 17:22 cachegrind_1t.out
+-rw-r--r-- 1 ilaria.basanisi ADA-9393  22K Nov 16 17:22 cachegrind_1t.txt
+-rw------- 1 ilaria.basanisi ADA-9393 152K Nov 16 17:28 cachegrind_32t.out
+-rw-r--r-- 1 ilaria.basanisi ADA-9393  22K Nov 16 17:28 cachegrind_32t.txt
+-rw------- 1 ilaria.basanisi ADA-9393 151K Nov 16 17:24 cachegrind_4t.out
+-rw-r--r-- 1 ilaria.basanisi ADA-9393  22K Nov 16 17:24 cachegrind_4t.txt
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 3.4K Nov 16 17:25 memcheck_16t.log
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 2.0K Nov 16 17:21 memcheck_1t.log
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 3.4K Nov 16 17:27 memcheck_32t.log
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 3.4K Nov 16 17:23 memcheck_4t.log
+-rw-r--r-- 1 ilaria.basanisi ADA-9393 1.3K Nov 16 17:28 summary.txt
+
+============================================
+
+============================================
+BENCHMARK COMPLETO!
+============================================
+Risultati salvati in: results_20251116_172031/
+
+File CSV generato: benchmark_detail_20251116_172031.csv
+Righe totali: 3601
+
+Per visualizzare i grafici:
+  cd results_20251116_172031
+  eog performance_overview.png  # o display, xdg-open, ecc.
+
+Per rianalizzare i dati:
+  cd results_20251116_172031
+  python3 ../analyze_detail.py benchmark_detail_*.csv
+============================================

@@ -1,0 +1,332 @@
+#!/bin/bash
+#PBS -N spmv_benchmark
+#PBS -l select=1:ncpus=32:mem=8gb
+#PBS -l walltime=02:00:00
+#PBS -q short_cpuQ
+#PBS -o output_spmv.log
+#PBS -e error_spmv.log
+
+# ============================================
+# CONFIGURAZIONE
+# ============================================
+MATRIX_FILE="10K.mtx"  
+NUM_RUNS=50 
+THREADS="1 2 4 8 16 32"
+MATRIX_STEM="${MATRIX_FILE%.*}"
+
+# Load modules
+module load gcc91
+module load python-3.10.14_gcc91
+module load valgrind/3.21.0 2>/dev/null || echo "Valgrind non disponibile"
+
+# Work directory
+cd $PBS_O_WORKDIR || exit 1
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_DIR="results_${MATRIX_STEM}"
+mkdir -p "$RESULT_DIR"
+
+echo "============================================"
+echo "BENCHMARK SpMV OpenMP"
+echo "============================================"
+echo "Nodo:      $(hostname)"
+echo "Directory: $(pwd)"
+echo "Matrice:   $MATRIX_FILE"
+echo "Data:      $(date)"
+echo "Output:    $RESULT_DIR"
+echo "Runs:      $NUM_RUNS per configurazione"
+echo "============================================"
+echo ""
+
+
+# ============================================
+# FASE 1: COMPILAZIONE
+# ============================================
+
+echo ">>> FASE 1: COMPILATION"
+echo "--------------------------------------------"
+
+g++ -std=c++11 -fopenmp -O3 -march=native -o code code.cpp
+if [ $? -ne 0 ]; then
+    echo "ERROR: Compilation failed"
+    exit 1
+fi
+echo "Compilation completed"
+
+# Compila anche versione debug per Valgrind
+g++ -std=c++11 -fopenmp -O3 -g -march=native -o code_debug code.cpp
+if [ $? -ne 0 ]; then
+    echo "Warning: Debug version compilation failed"
+else
+    echo "Debug version compiled"
+fi
+
+echo ""
+
+
+# ============================================
+# FASE 2: BENCHMARK PERFORMANCE
+# ============================================
+
+echo ">>> FASE 2: BENCHMARK PERFORMANCE"
+echo "--------------------------------------------"
+
+CSV_DETAIL="$RESULT_DIR/benchmark_detail_${MATRIX_STEM}.csv"
+TXT_LOG="$RESULT_DIR/benchmark_log_${MATRIX_STEM}.txt"
+
+echo "============================================" | tee "$RESULT_DIR/benchmark_output.txt"
+echo "BENCHMARK SpMV OpenMP" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "============================================" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "Matrix:        $MATRIX_STEM" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "Runs/config:   $NUM_RUNS" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "Threads:       $THREADS" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "Timestamp:     $TIMESTAMP" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "============================================" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "" | tee -a "$RESULT_DIR/benchmark_output.txt"
+
+first_run=true
+
+for t in $THREADS; do
+    export OMP_NUM_THREADS=$t
+    
+    echo "" | tee -a "$RESULT_DIR/benchmark_output.txt" "$TXT_LOG"
+    echo "========================================" | tee -a "$RESULT_DIR/benchmark_output.txt" "$TXT_LOG"
+    echo ">>> TESTING WITH $t THREAD(S)" | tee -a "$RESULT_DIR/benchmark_output.txt" "$TXT_LOG"
+    echo "========================================" | tee -a "$RESULT_DIR/benchmark_output.txt" "$TXT_LOG"
+    echo "" | tee -a "$RESULT_DIR/benchmark_output.txt" "$TXT_LOG"
+    
+    # Esegui il programma
+    if [ "$first_run" = true ]; then
+        # Prima esecuzione: includi header CSV
+        ./code "$MATRIX_FILE" $NUM_RUNS >> "$CSV_DETAIL" 2>> "$TXT_LOG"
+        first_run=false
+    else
+        # Successive esecuzioni: escludi header (prima riga)
+        ./code "$MATRIX_FILE" $NUM_RUNS 2>> "$TXT_LOG" | tail -n +2 >> "$CSV_DETAIL"
+    fi
+    
+    # Verifica successo
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
+        echo "[OK] Test completato per $t thread(s)" | tee -a "$RESULT_DIR/benchmark_output.txt" "$TXT_LOG"
+    else
+        echo "[ERROR] Test fallito per $t thread(s)" | tee -a "$RESULT_DIR/benchmark_output.txt" "$TXT_LOG"
+    fi
+done
+
+# Riepilogo globale
+echo "" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "============================================" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo ">>> RIEPILOGO GLOBALE" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "============================================" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "" | tee -a "$RESULT_DIR/benchmark_output.txt"
+
+echo "THREADS    | BEST CONFIG          | TIME (ms)    | SPEEDUP   " | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "----------------------------------------------------------------" | tee -a "$RESULT_DIR/benchmark_output.txt"
+
+for t in $THREADS; do
+    best_line=$(awk -F',' -v threads="$t" '
+        NR > 1 && $2 == threads {
+            key = $2 "," $3 "," $4
+            sum[key] += $5
+            count[key]++
+            speedup[key] = $6
+            config[key] = $3 "-" $4
+        }
+        END {
+            min_avg = 999999
+            for (k in sum) {
+                avg = sum[k] / count[k]
+                if (avg < min_avg) {
+                    min_avg = avg
+                    best_key = k
+                }
+            }
+            if (best_key != "") {
+                split(best_key, parts, ",")
+                printf "%s,%s,%.3f,%.4f\n", parts[1], config[best_key], min_avg, speedup[best_key]
+            }
+        }
+    ' "$CSV_DETAIL")
+    
+    if [ -n "$best_line" ]; then
+        echo "$best_line" | awk -F',' '{printf "%-10s | %-20s | %-12s | %-10s\n", $1, $2, $3, $4"x"}' | tee -a "$RESULT_DIR/benchmark_output.txt"
+    fi
+done
+
+echo "================================================================" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "" | tee -a "$RESULT_DIR/benchmark_output.txt"
+echo "[OK] Benchmark completato con successo!" | tee -a "$RESULT_DIR/benchmark_output.txt"
+
+echo ""
+
+
+# ============================================
+# FASE 3: ANALISI E GENERAZIONE GRAFICI
+# ============================================
+
+echo ">>> FASE 3: ANALISI E GENERAZIONE GRAFICI"
+echo "--------------------------------------------"
+
+if [ -f "$CSV_DETAIL" ]; then
+    echo "Generazione grafici da: $(basename $CSV_DETAIL)"
+    
+    # Esegui analisi Python nella directory dei risultati
+    cd "$RESULT_DIR"
+    python3 ../analyze_detail.py "$(basename $CSV_DETAIL)" > analysis_output.txt 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo "[OK] Grafici generati con successo"
+        echo "     - performance_overview.png"
+        echo "     - heatmap_chunk_size.png"
+        echo "     - efficiency.png"
+        echo "     - 90percent.png"
+    else
+        echo "[WARNING] Errore nella generazione dei grafici"
+        cat analysis_output.txt
+    fi
+    
+    cd ..
+else
+    echo "[WARNING] File CSV non trovato, analisi saltata"
+fi
+
+echo ""
+
+
+# ============================================
+# FASE 4: MEMORY PROFILING CON VALGRIND
+# ============================================
+
+echo ">>> FASE 4: MEMORY PROFILING WITH VALGRIND"
+echo "--------------------------------------------"
+
+VALGRIND_DIR="$RESULT_DIR/valgrind"
+mkdir -p "$VALGRIND_DIR"
+
+if command -v valgrind &> /dev/null && [ -f "code_debug" ]; then
+    
+    # Test con 1 4 16 32 thread (Valgrind è lento)
+    for t in 1 4 16 32; do
+        export OMP_NUM_THREADS=$t
+        echo ""
+        echo "=== VALGRIND: $t threads ==="
+        
+        # Memcheck: controllo memory leak
+        echo "  - Memcheck (memory leak)..."
+        valgrind --leak-check=full \
+                 --show-leak-kinds=all \
+                 --track-origins=yes \
+                 --log-file="$VALGRIND_DIR/memcheck_${t}t.log" \
+                 ./code_debug "$MATRIX_FILE" 1 > /dev/null 2>&1
+        
+        if [ -f "$VALGRIND_DIR/memcheck_${t}t.log" ]; then
+            echo "    OK: $VALGRIND_DIR/memcheck_${t}t.log"
+        fi
+        
+        # Cachegrind: analisi cache
+        echo "  - Cachegrind (cache analysis)..."
+        valgrind --tool=cachegrind \
+                 --cachegrind-out-file="$VALGRIND_DIR/cachegrind_${t}t.out" \
+                 ./code_debug "$MATRIX_FILE" 1 > /dev/null 2>&1
+        
+        if [ -f "$VALGRIND_DIR/cachegrind_${t}t.out" ]; then
+            # Genera annotazioni
+            cg_annotate "$VALGRIND_DIR/cachegrind_${t}t.out" > "$VALGRIND_DIR/cachegrind_${t}t.txt" 2>/dev/null
+            echo "    OK: $VALGRIND_DIR/cachegrind_${t}t.out"
+            echo "    OK: $VALGRIND_DIR/cachegrind_${t}t.txt"
+        fi
+    done
+    
+    # Summary
+    echo ""
+    echo "=== SUMMARY VALGRIND ===" > "$VALGRIND_DIR/summary.txt"
+    for log in "$VALGRIND_DIR"/memcheck_*.log; do
+        if [ -f "$log" ]; then
+            echo "" >> "$VALGRIND_DIR/summary.txt"
+            echo "File: $(basename $log)" >> "$VALGRIND_DIR/summary.txt"
+            echo "---" >> "$VALGRIND_DIR/summary.txt"
+            grep -E "ERROR SUMMARY|definitely lost|indirectly lost|possibly lost" "$log" >> "$VALGRIND_DIR/summary.txt"
+        fi
+    done
+    
+    echo "Valgrind complete: $VALGRIND_DIR/"
+    
+else
+    if [ ! -f "code_debug" ]; then
+        echo "Warning: Debug version not compiled, skipping Valgrind"
+    else
+        echo "Warning: Valgrind not available, skipping"
+    fi
+fi
+
+echo ""
+
+
+# ============================================
+# FASE 5: FINAL RECAP
+# ============================================
+
+echo ">>> FINAL RECAP"
+echo "============================================"
+
+# Crea indice dei file
+INDEX_FILE="$RESULT_DIR/INDEX.txt"
+{
+    echo "============================================"
+    echo "INDICE FILE GENERATI"
+    echo "============================================"
+    echo "Data: $(date)"
+    echo "Matrice: $MATRIX_FILE"
+    echo "Runs per configurazione: $NUM_RUNS"
+    echo "Threads testati: $THREADS"
+    echo ""
+    echo "FILE PRINCIPALI:"
+    echo "--------------------------------------------"
+    echo "  - benchmark_output.txt           : Output completo benchmark"
+    echo "  - benchmark_detail_${MATRIX_STEM}.csv : Tutte le run ($(wc -l < "$CSV_DETAIL" 2>/dev/null || echo "N/A") righe)"
+    echo "  - benchmark_log_${MATRIX_STEM}.txt    : Log dettagliato esecuzione"
+    echo ""
+    echo "GRAFICI GENERATI:"
+    echo "--------------------------------------------"
+    echo "  - performance_overview.png       : Performance vs threads"
+    echo "  - heatmap_chunk_size.png         : Heatmap speedup"
+    echo "  - efficiency.png                 : Efficienza parallela"
+    echo "  - 90percent.png                  : 90° percentile tempi"
+    echo ""
+    echo "ANALISI:"
+    echo "--------------------------------------------"
+    echo "  - analysis_output.txt            : Log analisi Python"
+    echo "  - valgrind/                      : Directory profiling memoria"
+    echo ""
+    echo "TUTTI I FILE:"
+    echo "--------------------------------------------"
+    ls -lh "$RESULT_DIR" | grep -v "^d" | tail -n +2
+    echo ""
+    if [ -d "$VALGRIND_DIR" ]; then
+        echo "VALGRIND FILES:"
+        echo "--------------------------------------------"
+        ls -lh "$VALGRIND_DIR" | tail -n +2
+    fi
+    echo ""
+    echo "============================================"
+} > "$INDEX_FILE"
+
+cat "$INDEX_FILE"
+
+echo ""
+echo "============================================"
+echo "BENCHMARK COMPLETO!"
+echo "============================================"
+echo "Risultati salvati in: $RESULT_DIR/"
+echo ""
+echo "File CSV generato: $(basename $CSV_DETAIL)"
+echo "Righe totali: $(wc -l < "$CSV_DETAIL" 2>/dev/null || echo "N/A")"
+echo ""
+echo "Per visualizzare i grafici:"
+echo "  cd $RESULT_DIR"
+echo "  eog performance_overview.png  # o display, xdg-open, ecc."
+echo ""
+echo "Per rianalizzare i dati:"
+echo "  cd $RESULT_DIR"
+echo "  python3 ../analyze_detail.py benchmark_detail_*.csv"
+echo "============================================"
