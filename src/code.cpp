@@ -13,7 +13,7 @@
 
 using namespace std;
 
-//------------CONFIGURAZIONE: SCHEDULING + CHUNK SIZE---------------
+//------------CONFIGURATION: SCHEDULING + CHUNK SIZE---------------
 
 struct ScheduleConfig {
     string name;
@@ -44,7 +44,7 @@ vector<ScheduleConfig> generate_schedule_configs() {
     };
 }
 
-//-----------STRUTTURA COO & CSR Matrix----------------
+//-----------STRUCTURE: COO & CSR Matrix----------------
 
 struct COOMatrix {
     vector<int> row, col;
@@ -100,7 +100,7 @@ COOMatrix read_matrix_market(const string& filename) {
     return coo;
 }
 
-//-----------CONVERSIONE COO -> CSR--------
+//-----------CONVERSION COO -> CSR--------
 
 CSRMatrix convert_coo_to_csr(const COOMatrix& coo) {
     CSRMatrix csr;
@@ -140,7 +140,7 @@ CSRMatrix convert_coo_to_csr(const COOMatrix& coo) {
     return csr;
 }
 
-//-----------VETTORE RANDOM (x) ----------------------------------
+//----------- RANDOM VECTOR(x) ----------------------------------
 
 vector<double> vec_rand(int n) {
     vector<double> x(n);
@@ -150,7 +150,7 @@ vector<double> vec_rand(int n) {
     return x;
 }
 
-//---------------------MOLTIPLICAZIONE VET*MAT SEQUENZIALE (A*x=y)------------------
+//---------------------MULTIPLICATION VET*MAT SEQUENTIAL (A*x=y)------------------
 
 vector<double> spmv_sequential(const CSRMatrix& A, const vector<double>& x) {
     vector<double> y(A.num_rows, 0.0);
@@ -163,7 +163,7 @@ vector<double> spmv_sequential(const CSRMatrix& A, const vector<double>& x) {
     return y;
 }
 
-//--------------------MOLTIPLICAZIONE VET*MAT PARALLELO OpenMP-----------------
+//--------------------MULTIPLICATION VET*MAT PARALLEL OpenMP-----------------
 
 vector<double> spmv_parallel(const CSRMatrix& A, const vector<double>& x, 
                              const string& schedule_clause) {
@@ -251,7 +251,7 @@ vector<double> spmv_parallel(const CSRMatrix& A, const vector<double>& x,
     return y;
 }
 
-//------------CALCOLO 90° PERCENTILE------------------------------------
+//------------ 90° PERCENTILE------------------------------------
 
 double calculate_percentile_90(vector<double> times) {
     if (times.empty()) return 0.0;
@@ -263,7 +263,7 @@ double calculate_percentile_90(vector<double> times) {
     return times[p90_idx];
 }
 
-//-----------BENCHMARK CON OUTPUT CSV DETTAGLIATO PER TUTTE LE RUN--------------------
+//-----------BENCHMARK WITH OUTPUT CSV  FOR ALL THE RUNS--------------------
 
 void benchmark(const CSRMatrix& A, const string& matrix_name, int num_runs) {
     int num_threads;
@@ -273,7 +273,7 @@ void benchmark(const CSRMatrix& A, const string& matrix_name, int num_runs) {
         num_threads = omp_get_num_threads();
     }
 
-    // Cache del tempo sequenziale (calcolato una sola volta per num_threads)
+    // Cache of the sequential time  (one time for num_threads)
     static map<int, double> seq_time_cache;
     double time_ref;
     
@@ -291,17 +291,17 @@ void benchmark(const CSRMatrix& A, const string& matrix_name, int num_runs) {
     vector<double> x = vec_rand(A.num_cols);
     vector<ScheduleConfig> configs = generate_schedule_configs();
     
-    // Accumulatore dei tempi per ogni configurazione (per calcolo p90)
+    // time accumulator for each configuration  (for 90p)
     static map<string, vector<double>> time_accumulator;
     
-    // Stampa header CSV solo la prima volta
+    // print header CSV only for the first line
     static bool csv_header_printed = false;
     if (!csv_header_printed) {
         cout << "run,threads,schedule_type,chunk_size,time_ms,speedup,p90_ms" << endl;
         csv_header_printed = true;
     }
     
-    // Esegui tutte le run per ogni configurazione
+    // execute every  run for each configuration
     for (int run = 1; run <= num_runs; ++run) {
         for (const auto& config : configs) {
             double start = now_sec();
@@ -310,14 +310,14 @@ void benchmark(const CSRMatrix& A, const string& matrix_name, int num_runs) {
             double t = (end - start) * 1000.0;
             double s = time_ref / t;
             
-            // Accumula tempi per il 90° percentile
+            // acumulate time for 90° percentile
             string key = to_string(num_threads) + "_" + config.type + "_" + config.chunk;
             time_accumulator[key].push_back(t);
             
-            // Calcola p90 corrente
+            // calculate the current p90 
             double p90 = calculate_percentile_90(time_accumulator[key]);
             
-            // Stampa risultato della singola run
+            // print signle run results
             cout << run << ","
                  << num_threads << ","
                  << config.type << ","
@@ -329,14 +329,14 @@ void benchmark(const CSRMatrix& A, const string& matrix_name, int num_runs) {
         }
     }
     
-    // Stampa su stderr il riepilogo per il log (mantenendo il formato originale)
+    // print
     cerr << "\n========================================" << endl;
     cerr << ">>> TESTING WITH " << num_threads << " THREAD(S)" << endl;
     cerr << "========================================" << endl;
     cerr << "\nCONFIG         | AVG TIME (ms) | MIN TIME (ms) | MAX TIME (ms) | SPEEDUP" << endl;
     cerr << "--------------------------------------------------------------------" << endl;
     
-    // Calcola statistiche per il riepilogo
+    // calculate statistic for the sum up
     string best_config;
     double best_time = 1e9;
     double best_speedup = 0.0;
