@@ -1,0 +1,11 @@
+MATRIX  | PROCS | SELECT | NCPUS | MPIPROCS | MEM/node | Mem TOT | QUEUE |
+
+10K     | 1     | 1      | 1     | 1        | 2gb      | 2gb     | short | 
+20K     | 2     | 1      | 2     | 2        | 2gb      | 2gb     | short | 
+40K     | 4     | 1      | 4     | 4        | 4gb      | 4gb     | short | 
+80K     | 8     | 1      | 8     | 8        | 8gb      | 8gb     | short | 
+160K    | 16    | 1      | 16    | 16       | 16gb     | 16gb    | short | 
+320K    | 32    | 1      | 32    | 32       | 32gb     | 32gb    | short | 
+640K    | 64    | 1      | 64    | 64       | 64gb     | 64gb    | short | 
+1280K   | 128   | 2      | 64    | 64       | 128gb    | 256gb   | short | 
+2560K   | 256   | 3      | 86    | 86       | 256gb    | 768gb   | short | 

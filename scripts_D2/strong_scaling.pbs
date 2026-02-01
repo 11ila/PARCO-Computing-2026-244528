@@ -1,0 +1,410 @@
+#!/bin/bash
+#PBS -N mpi_strong
+#PBS -l select=4:ncpus=64:mpiprocs=64:mem=256gb
+#PBS -l walltime=00:30:00
+#PBS -q short_cpuQ
+#PBS -o output_strong.log
+#PBS -e error_strong.log
+
+# --------------------------------------------
+# STRONG SCALING 
+# Uses code.cpp
+# --------------------------------------------
+
+# Setup environment
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module load mpich-3.2.1--gcc-9.1.0
+module load gcc91
+
+# Verify MPI is loaded
+echo "Checking MPI installation..."
+which mpirun
+which mpicxx
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: MPI commands not found!"
+    exit 1
+fi
+
+cd $PBS_O_WORKDIR || exit 1
+
+
+echo "--------------------------------------------"
+echo "STRONG SCALING"
+echo "--------------------------------------------"
+echo "Node:      $(hostname)"
+echo "Results:   $RESULT_DIR"
+echo "Walltime:  30 minutes"
+echo "MPI:       $(which mpirun)"
+echo "Code:      code.cpp"
+echo "--------------------------------------------"
+echo ""
+
+# --------------------------------------------
+# COMPILATION
+# --------------------------------------------
+
+echo ">>> COMPILING code.cpp"
+
+if [ ! -f "code.cpp" ]; then
+    echo "ERROR: code.cpp not found!"
+    exit 1
+fi
+
+
+mpicxx -O3 -std=c++11 -o code code.cpp
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Compilation failed"
+    exit 1
+fi
+echo "[OK] Compiled successfully"
+echo ""
+
+# --------------------------------------------
+# CONFIGURATION
+# --------------------------------------------
+
+# Matrices to test
+MATRICES=(
+    "2380K.mtx" 
+)
+
+# Process counts for strong scaling
+PROCS=(1 2 4 8 16 32 64 128 256)
+
+# Number of iterations per test
+NUM_ITERATIONS=50
+
+echo "Configuration:"
+echo "  Matrices:   ${MATRICES[@]}"
+echo "  Processes:  ${PROCS[@]}"
+echo "  Iterations: $NUM_ITERATIONS"
+echo ""
+
+# Verify matrices exist
+echo ">>> VERIFYING MATRICES"
+missing=0
+for matrix in "${MATRICES[@]}"; do
+    if [ ! -f "$matrix" ]; then
+        echo "  $matrix - NOT FOUND"
+        missing=$((missing + 1))
+    else
+        info=$(grep -v "^%" "$matrix" 2>/dev/null | head -1)
+        echo "  $matrix - $info"
+    fi
+done
+
+if [ $missing -gt 0 ]; then
+    echo ""
+    echo "ERROR: $missing matrix file(s) missing!"
+    exit 1
+fi
+
+echo ""
+echo "All matrices found"
+echo ""
+
+# --------------------------------------------
+# CLEAN OLD RESULTS
+# --------------------------------------------
+
+echo ">>> CLEANING OLD RESULTS"
+if [ -f "strong_scaling_results.csv" ]; then
+    rm strong_scaling_results.csv
+    echo "[OK] Removed old CSV file"
+else
+    echo "[OK] No old CSV file to remove"
+fi
+echo ""
+
+# --------------------------------------------
+# RUN EXPERIMENTS
+# --------------------------------------------
+
+echo ">>> RUNNING STRONG SCALING"
+echo "--------------------------------------------"
+echo ""
+
+START_TIME=$(date +%s)
+
+# Store baseline times for each matrix
+declare -A BASELINE_TIMES
+
+for matrix in "${MATRICES[@]}"; do
+
+    matrix_name="${matrix%.mtx}"  
+    RESULT_DIR="${matrix_name}"   
+    mkdir -p "$RESULT_DIR"        
+  
+    echo ""
+    echo "--------------------------------------------"
+    echo "Matrix: $matrix"
+    echo "Results will be saved in: $RESULT_DIR"
+    echo "--------------------------------------------"
+   
+    # Matrix info
+    info=$(grep -v "^%" "$matrix" 2>/dev/null | head -1)
+    echo "  Dimensions: $info"
+    echo ""
+    
+    # Get matrix name without extension 
+    matrix_name="${matrix%.mtx}"
+    
+    for np in "${PROCS[@]}"; do
+        TEST_START=$(date +%s)
+        echo "  Testing $np process(es)... ($(date +%H:%M:%S))"
+        
+        # Output file
+        OUTPUT_FILE="$RESULT_DIR/output_${matrix_name}_${np}p.log"
+        
+        # Run experiment
+        mpirun -np $np ./code "$matrix" strong $NUM_ITERATIONS \
+            > "$OUTPUT_FILE" 2>&1
+        
+        EXIT_CODE=$?
+        TEST_END=$(date +%s)
+        TEST_DURATION=$((TEST_END - TEST_START))
+        
+        if [ $EXIT_CODE -eq 0 ]; then
+            echo "     Completed in ${TEST_DURATION}s"
+            
+            # Extract timing and MPI strategy
+            spmv_time=$(grep "SpMV time:" "$OUTPUT_FILE" | awk '{print $3}')
+            mpi_strategy=$(grep "Strategy:" "$OUTPUT_FILE" | sed 's/.*Strategy: //')
+            
+            if [ -n "$spmv_time" ]; then
+                echo "    SpMV time: $spmv_time ms"
+
+                # Display MPI strategy used
+                if [ -n "$mpi_strategy" ]; then
+                    echo "    MPI Strategy: $mpi_strategy"
+                fi
+                
+                # Save baseline (1 process)
+                if [ $np -eq 1 ]; then
+                    BASELINE_TIMES[$matrix]=$spmv_time
+                    echo "    [Baseline: ${spmv_time} ms]"
+                else
+                    # Calculate speedup using awk
+                    baseline=${BASELINE_TIMES[$matrix]}
+                    if [ -n "$baseline" ] && [ "$baseline" != "0" ]; then
+                        speedup=$(awk "BEGIN {printf \"%.4f\", $baseline / $spmv_time}")
+                        efficiency=$(awk "BEGIN {printf \"%.2f\", ($speedup / $np) * 100}")
+                        echo "    Speedup: ${speedup}x"
+                        echo "    Efficiency: ${efficiency}%"
+                    fi
+                fi
+            else
+                echo "    WARNING: Could not extract timing"
+            fi
+            
+        else
+            echo "    FAILED (exit code: $EXIT_CODE)"
+            echo "    Last 5 lines:"
+            tail -5 "$OUTPUT_FILE" 2>/dev/null | sed 's/^/      /'
+        fi
+        
+        # Progress
+        ELAPSED=$(($(date +%s) - START_TIME))
+        echo "    Total elapsed: $((ELAPSED / 60))m $((ELAPSED % 60))s"
+        echo ""
+    done
+done
+
+TOTAL_TIME=$(($(date +%s) - START_TIME))
+
+echo ""
+echo "--------------------------------------------"
+echo "STRONG SCALING COMPLETED"
+echo "Total time: $((TOTAL_TIME / 60))m $((TOTAL_TIME % 60))s"
+echo "--------------------------------------------"
+echo ""
+
+# --------------------------------------------
+# POST-PROCESS CSV TO ADD SPEEDUP
+# --------------------------------------------
+
+echo ">>> POST-PROCESSING RESULTS"
+
+if [ -f "strong_scaling_results.csv" ]; then 
+    # Create corrected CSV with proper speedup/efficiency
+    echo "Calculating speedup and efficiency..."
+    
+    # Read CSV and calculate speedup
+    awk -F',' '
+    BEGIN {OFS=","}
+    NR==1 {
+        # Header
+        print $0
+        next
+    }
+    {
+        matrix = $1
+        mode = $2
+        procs = $3
+        time = $4
+        comp = $5
+        comm = $6
+        gflops = $9
+        memory = $10
+        imbalance = $11
+        min_nnz = $12
+        max_nnz = $13
+        
+        # Store baseline time (1 process)
+        key = matrix "_" mode
+        if (procs == 1) {
+            baseline[key] = time
+        }
+        
+        # Store line for later processing
+        lines[NR] = $0
+        keys[NR] = key
+    }
+    END {
+        # Second pass: calculate speedup
+        for (i = 2; i <= NR; i++) {
+            split(lines[i], fields, ",")
+            matrix = fields[1]
+            mode = fields[2]
+            procs = fields[3]
+            time = fields[4]
+            
+            key = keys[i]
+            base = baseline[key]
+            
+            if (base > 0 && time > 0) {
+                speedup = base / time
+                efficiency = (speedup / procs) * 100
+            } else {
+                speedup = 0
+                efficiency = 0
+            }
+            
+            # Print with calculated speedup
+            printf "%s,%s,%s,%s,%s,%s,%.4f,%.2f,%s,%s,%s,%s,%s\n",
+                fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
+                speedup, efficiency, fields[9], fields[10], fields[11], fields[12], fields[13]
+        }
+    }
+    ' strong_scaling_results.csv > "$RESULT_DIR/strong_scaling_results.csv"
+    
+    # Replace original with corrected version
+    cp "$RESULT_DIR/strong_scaling_results.csv" strong_scaling_results.csv
+    
+    echo "[OK] Speedup and efficiency calculated"
+    echo ""
+    
+    # --------------------------------------------
+    # DISPLAY RESULTS
+    # --------------------------------------------
+    
+    echo ">>> RESULTS SUMMARY"
+    echo "--------------------------------------------"
+    echo ""
+    
+    echo "CSV Preview:"
+    echo "------------"
+    head -1 strong_scaling_results.csv
+    echo "------------"
+    tail -n +2 strong_scaling_results.csv
+    echo ""
+    
+    # Formatted table
+    echo "Detailed Results:"
+    echo "-----------------"
+    printf "%-10s %-6s %-12s %-12s %-12s %-10s %-12s\n" \
+           "Matrix" "Procs" "Time(ms)" "Comp(ms)" "Comm(ms)" "Speedup" "Efficiency"
+    echo "-------------------------------------------------------------------------------"
+    
+    tail -n +2 strong_scaling_results.csv | awk -F',' '{
+        printf "%-10s %-6s %-12.2f %-12.2f %-12.2f %-10.2f %-12.2f%%\n",
+               $1, $3, $4, $5, $6, $7, $8
+    }'
+    
+    echo ""
+    
+    # Communication analysis
+    echo "Communication Overhead:"
+    echo "-----------------------"
+    tail -n +2 strong_scaling_results.csv | awk -F',' '{
+        if ($4 > 0) {
+            comp_pct = ($5 / $4) * 100
+            comm_pct = ($6 / $4) * 100
+            printf "%-10s | %2d procs | Comp: %5.1f%% | Comm: %5.1f%%\n",
+                   $1, $3, comp_pct, comm_pct
+        }
+    }'
+    
+    echo ""
+    
+    # Scalability analysis
+    echo "Scalability Analysis:"
+    echo "---------------------"
+    
+    # For each matrix, show how speedup scales
+    for matrix in "${MATRICES[@]}"; do
+        matrix_name="${matrix%.mtx}"
+        echo ""
+        echo "Matrix: $matrix_name"
+        tail -n +2 strong_scaling_results.csv | awk -F',' -v mat="$matrix_name" '
+        $1 == mat {
+            printf "  %2d procs: Speedup = %5.2fx | Efficiency = %5.1f%%\n",
+                   $3, $7, $8
+        }'
+    done
+    
+    echo ""
+    
+    # MPI Strategy Summary
+    echo "MPI Strategy Used:"
+    echo "------------------"
+    for matrix in "${MATRICES[@]}"; do
+        matrix_name="${matrix%.mtx}"
+        echo ""
+        echo "Matrix: $matrix_name"
+        for np in "${PROCS[@]}"; do
+            OUTPUT_FILE="$RESULT_DIR/output_${matrix_name}_${np}p.log"
+            if [ -f "$OUTPUT_FILE" ]; then
+                mpi_strategy=$(grep "Strategy:" "$OUTPUT_FILE" | sed 's/.*Strategy: //')
+                if [ -n "$mpi_strategy" ]; then
+                    printf "  %2d procs: %s\n" $np "$mpi_strategy"
+                fi
+            fi
+        done
+    done
+    
+    echo ""
+    
+else
+    echo "[ERROR] CSV file not found!"
+    echo "Check individual logs in: $RESULT_DIR/"
+fi
+
+echo ""
+
+# --------------------------------------------
+# FINAL OUTPUT
+# --------------------------------------------
+
+echo ""
+echo "--------------------------------------------"
+echo "EXPERIMENT COMPLETE"
+echo "--------------------------------------------"
+echo ""
+echo "Results saved to: $RESULT_DIR/"
+echo ""
+echo "Files generated:"
+ls -lh "$RESULT_DIR" | awk 'NR>1 {printf "  %-40s %8s\n", $9, $5}'
+echo ""
+echo "Main results: $RESULT_DIR/strong_scaling_results.csv"
+echo ""
+
+# Copy PBS logs
+cp output_strong.log "$RESULT_DIR/" 2>/dev/null
+cp error_strong.log "$RESULT_DIR/" 2>/dev/null
+
+echo "PBS logs copied to results directory"
+echo ""
+echo "--------------------------------------------"

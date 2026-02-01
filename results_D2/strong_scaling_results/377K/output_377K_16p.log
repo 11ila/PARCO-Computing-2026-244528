@@ -1,0 +1,5 @@
+Matrix: 377K.mtx
+Strategy: OPTIMIZED ALLTOALLV
+SpMV time: 2.73253 ms
+Comp(ms): 1.21313
+Comm(ms): 1.51935

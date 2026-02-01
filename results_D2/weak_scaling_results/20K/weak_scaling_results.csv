@@ -1,0 +1,3 @@
+matrix,type,procs,time,comp,comm,speedup,eff,flops,mem,imb,min,max
+10K,opt,1,0.000600815,8.10623e-05,0.000419617,0,0,0,0,0,0,0
+20K,opt,2,0.000171661,2.38419e-05,0.000119209,0,0,0,0,0,0,0

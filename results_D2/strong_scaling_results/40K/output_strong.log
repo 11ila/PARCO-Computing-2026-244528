@@ -1,0 +1,118 @@
+Checking MPI installation...
+/apps/mpich-3.2.1--gcc-9.1.0/bin/mpirun
+/apps/mpich-3.2.1--gcc-9.1.0/bin/mpicxx
+--------------------------------------------
+STRONG SCALING
+--------------------------------------------
+Node:      hpc-c12-node02.maas.icts.unitn.it
+Results:   
+Walltime:  30 minutes
+MPI:       /apps/mpich-3.2.1--gcc-9.1.0/bin/mpirun
+Code:      code.cpp
+--------------------------------------------
+
+>>> COMPILING code.cpp
+[OK] Compiled successfully
+
+Configuration:
+  Matrices:   10K.mtx
+  Processes:  1 2
+  Iterations: 50
+
+>>> VERIFYING MATRICES
+  10K.mtx - 10974 10974 219812
+
+All matrices found
+
+>>> CLEANING OLD RESULTS
+[OK] Removed old CSV file
+
+>>> RUNNING STRONG SCALING
+--------------------------------------------
+
+
+--------------------------------------------
+Matrix: 10K.mtx
+Results will be saved in: 10K
+--------------------------------------------
+  Dimensions: 10974 10974 219812
+
+  Testing 1 process(es)... (14:47:25)
+     Completed in 0s
+    SpMV time: 0.253229 ms
+    MPI Strategy: OPTIMIZED ALLTOALLV
+    [Baseline: 0.253229 ms]
+    Total elapsed: 0m 0s
+
+  Testing 2 process(es)... (14:47:25)
+     Completed in 0s
+    SpMV time: 0.144205 ms
+    MPI Strategy: OPTIMIZED ALLTOALLV
+    Speedup: 1.7560x
+    Efficiency: 87.80%
+    Total elapsed: 0m 0s
+
+
+--------------------------------------------
+STRONG SCALING COMPLETED
+Total time: 0m 0s
+--------------------------------------------
+
+>>> POST-PROCESSING RESULTS
+Calculating speedup and efficiency...
+[OK] Speedup and efficiency calculated
+
+>>> RESULTS SUMMARY
+--------------------------------------------
+
+CSV Preview:
+------------
+matrix,type,procs,time,comp,comm,speedup,eff,flops,mem,imb,min,max
+------------
+10K,opt,1,0.253229,0.252628,0.000548363,1.0000,100.00,0,0,0,0,0
+10K,opt,2,0.144205,0.119624,0.024538,1.7560,87.80,0,0,0,0,0
+
+Detailed Results:
+-----------------
+Matrix     Procs  Time(ms)     Comp(ms)     Comm(ms)     Speedup    Efficiency  
+-------------------------------------------------------------------------------
+10K        1      0.25         0.25         0.00         1.00       100.00      %
+10K        2      0.14         0.12         0.02         1.76       87.80       %
+
+Communication Overhead:
+-----------------------
+10K        |  1 procs | Comp:  99.8% | Comm:   0.2%
+10K        |  2 procs | Comp:  83.0% | Comm:  17.0%
+
+Scalability Analysis:
+---------------------
+
+Matrix: 10K
+   1 procs: Speedup =  1.00x | Efficiency = 100.0%
+   2 procs: Speedup =  1.76x | Efficiency =  87.8%
+
+MPI Strategy Used:
+------------------
+
+Matrix: 10K
+   1 procs: OPTIMIZED ALLTOALLV
+   2 procs: OPTIMIZED ALLTOALLV
+
+
+
+--------------------------------------------
+EXPERIMENT COMPLETE
+--------------------------------------------
+
+Results saved to: 10K/
+
+Files generated:
+  output_10K_1p.log                             110
+  output_10K_2p.log                             107
+  strong_scaling_results.csv                    191
+
+Main results: 10K/strong_scaling_results.csv
+
+PBS logs copied to results directory
+
+--------------------------------------------

@@ -1,0 +1,5 @@
+Matrix: 2380K.mtx
+Strategy: OPTIMIZED ALLTOALLV
+SpMV time: 19.8256 ms
+Comp(ms): 11.0323
+Comm(ms): 8.79303

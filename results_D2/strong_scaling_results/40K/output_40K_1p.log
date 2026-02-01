@@ -1,0 +1,5 @@
+Matrix: 40K.mtx
+Strategy: OPTIMIZED ALLTOALLV
+SpMV time: 0.140495 ms
+Comp(ms): 0.140023
+Comm(ms): 0.000424385

@@ -1,0 +1,11 @@
+matrix name	 |	file .mtx	|	num_row	   |   num_col	|      nnz	|	sparsity    |      density   | 	Symmetrical	|    Diagonal 
+       
+bcsstk17	 |	10K.mtx		|	10974  	   |   10974	|     428650	|	0.99644%    | 	  0.00356%   |    YES		|	YES
+jnlbrng1	 |	40K.mtx		|	40000	   |   40000    |     199200    |     	0.99988%    |	  0.00012%   |    YES		|	YES
+x104		 |     108K.mtx		|      108384	   |  108384    |    8713602	|	0.99926%    |	  0.00074%   | 	  YES		|	YES
+pwtk		 |     217K.mtx		|      217918	   |  217918    |   11524432	|	0.99976%    |	  0.00024%   |	  YES		|	YES
+ML_Laplace	 |     377K.mtx		|      377002	   |  377002    |   27582698    |       0.99981%    |	  0.00019%   |    YES		|	YES
+af_shell9	 |     504K.mtx		|      504855	   |  504855    |   17588845	|       0.99931%    |     0.00069%   | 	  YES		|	YES
+CurlCurl_3	 |    1219K.mtx	 	|     1219574	   | 1219574    |   13544618    |       0.9999909%  |	  0.0000091% |	  YES		|	YES
+CurlCurl_4	 |    2380K.mtx		|     2380515      | 2380515    |   26515867    |       0.9999953%  |     0.0000047% |    YES		| 	YES
+

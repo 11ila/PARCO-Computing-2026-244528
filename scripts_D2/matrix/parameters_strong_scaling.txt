@@ -1,0 +1,10 @@
+MATRICE | PROC TEST                  | SELECT | NCPUS | MPIPROCS | MEM/node | Queue      | Walltime |
+
+10K     | 1-2                        | 1      | 2     | 2        | 8gb      | short_cpuQ | 0:10:00  | 
+40K     | 1-2-4                      | 1      | 4     | 4        | 16gb     | short_cpuQ | 0:10:00  | 
+108K    | 1-2-4-8                    | 1      | 8     | 8        | 64gb     | short_cpuQ | 0:30:00  | 
+217K    | 1-2-4-8-16                 | 1      | 16    | 16       | 64gb     | short_cpuQ | 0:30:00  | 
+377K    | 1-2-4-8-16-32              | 1      | 32    | 32       | 128gb    | short_cpuQ | 0:30:00  |
+504K    | 1-2-4-8-16-32-64           | 1      | 64    | 64       | 256gb    | short_cpuQ | 0:30:00  |
+1219k   | 1-2-4-8-16-32-64-128       | 2      | 64    | 64       | 256gb    | short_cpuQ | 01:00:00 | 
+2380K   | 1-2-4-8-16-32-64-128-256   | 4      | 64    | 64       | 256gb    | short_cpuQ | 02:00:00 |

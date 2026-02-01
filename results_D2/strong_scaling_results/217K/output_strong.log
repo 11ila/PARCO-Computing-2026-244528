@@ -1,0 +1,146 @@
+Checking MPI installation...
+/apps/mpich-3.2.1--gcc-9.1.0/bin/mpirun
+/apps/mpich-3.2.1--gcc-9.1.0/bin/mpicxx
+--------------------------------------------
+STRONG SCALING
+--------------------------------------------
+Node:      hpc-c12-node04.unitn.it
+Results:   
+Walltime:  30 minutes
+MPI:       /apps/mpich-3.2.1--gcc-9.1.0/bin/mpirun
+Code:      code.cpp
+--------------------------------------------
+
+>>> COMPILING code.cpp
+[OK] Compiled successfully
+
+Configuration:
+  Matrices:   108K.mtx
+  Processes:  1 2 4 8
+  Iterations: 50
+
+>>> VERIFYING MATRICES
+  108K.mtx - 108384 108384 5138004
+
+All matrices found
+
+>>> CLEANING OLD RESULTS
+[OK] Removed old CSV file
+
+>>> RUNNING STRONG SCALING
+--------------------------------------------
+
+
+--------------------------------------------
+Matrix: 108K.mtx
+Results will be saved in: 108K
+--------------------------------------------
+  Dimensions: 108384 108384 5138004
+
+  Testing 1 process(es)... (14:51:40)
+     Completed in 4s
+    SpMV time: 9.25535 ms
+    MPI Strategy: OPTIMIZED ALLTOALLV
+    [Baseline: 9.25535 ms]
+    Total elapsed: 0m 4s
+
+  Testing 2 process(es)... (14:51:44)
+     Completed in 3s
+    SpMV time: 4.30721 ms
+    MPI Strategy: OPTIMIZED ALLTOALLV
+    Speedup: 2.1488x
+    Efficiency: 107.44%
+    Total elapsed: 0m 7s
+
+  Testing 4 process(es)... (14:51:47)
+     Completed in 3s
+    SpMV time: 2.2756 ms
+    MPI Strategy: OPTIMIZED ALLTOALLV
+    Speedup: 4.0672x
+    Efficiency: 101.68%
+    Total elapsed: 0m 10s
+
+  Testing 8 process(es)... (14:51:50)
+     Completed in 3s
+    SpMV time: 1.57469 ms
+    MPI Strategy: OPTIMIZED ALLTOALLV
+    Speedup: 5.8776x
+    Efficiency: 73.47%
+    Total elapsed: 0m 13s
+
+
+--------------------------------------------
+STRONG SCALING COMPLETED
+Total time: 0m 13s
+--------------------------------------------
+
+>>> POST-PROCESSING RESULTS
+Calculating speedup and efficiency...
+[OK] Speedup and efficiency calculated
+
+>>> RESULTS SUMMARY
+--------------------------------------------
+
+CSV Preview:
+------------
+matrix,type,procs,time,comp,comm,speedup,eff,flops,mem,imb,min,max
+------------
+108K,opt,1,9.25535,9.25313,0.00202179,1.0000,100.00,0,0,0,0,0
+108K,opt,2,4.30721,4.00795,0.299029,2.1488,107.44,0,0,0,0,0
+108K,opt,4,2.2756,1.68567,0.589881,4.0672,101.68,0,0,0,0,0
+108K,opt,8,1.57469,1.10689,0.467734,5.8776,73.47,0,0,0,0,0
+
+Detailed Results:
+-----------------
+Matrix     Procs  Time(ms)     Comp(ms)     Comm(ms)     Speedup    Efficiency  
+-------------------------------------------------------------------------------
+108K       1      9.26         9.25         0.00         1.00       100.00      %
+108K       2      4.31         4.01         0.30         2.15       107.44      %
+108K       4      2.28         1.69         0.59         4.07       101.68      %
+108K       8      1.57         1.11         0.47         5.88       73.47       %
+
+Communication Overhead:
+-----------------------
+108K       |  1 procs | Comp: 100.0% | Comm:   0.0%
+108K       |  2 procs | Comp:  93.1% | Comm:   6.9%
+108K       |  4 procs | Comp:  74.1% | Comm:  25.9%
+108K       |  8 procs | Comp:  70.3% | Comm:  29.7%
+
+Scalability Analysis:
+---------------------
+
+Matrix: 108K
+   1 procs: Speedup =  1.00x | Efficiency = 100.0%
+   2 procs: Speedup =  2.15x | Efficiency = 107.4%
+   4 procs: Speedup =  4.07x | Efficiency = 101.7%
+   8 procs: Speedup =  5.88x | Efficiency =  73.5%
+
+MPI Strategy Used:
+------------------
+
+Matrix: 108K
+   1 procs: OPTIMIZED ALLTOALLV
+   2 procs: OPTIMIZED ALLTOALLV
+   4 procs: OPTIMIZED ALLTOALLV
+   8 procs: OPTIMIZED ALLTOALLV
+
+
+
+--------------------------------------------
+EXPERIMENT COMPLETE
+--------------------------------------------
+
+Results saved to: 108K/
+
+Files generated:
+  output_108K_1p.log                            108
+  output_108K_2p.log                            106
+  output_108K_4p.log                            105
+  output_108K_8p.log                            106
+  strong_scaling_results.csv                    307
+
+Main results: 108K/strong_scaling_results.csv
+
+PBS logs copied to results directory
+
+--------------------------------------------
